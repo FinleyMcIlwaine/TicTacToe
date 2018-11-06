@@ -1,2 +1,2 @@
 # TicTacToe
-TicTacToe game, with a GUI, in Python!
+A TicTacToe game, with a Tkinter GUI, in Python!
