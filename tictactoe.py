@@ -155,6 +155,6 @@ resetBtn.pack(pady=(5,0))
 
 # label object to tell turn/state
 boardLabel = Label(root, text="X's turn!", font=("Bookman", 15), bg="#808080", fg="white")
-boardLabel.pack(pady=(30,0))
+boardLabel.pack(pady=(30,5))
 
 root.mainloop()
