@@ -3,81 +3,68 @@
 
 from tkinter import *
 
-# global turn variable
-# 1 -> X's turn
-# 0 -> O's turn
-turn = 1
-# global allow move variable
-# 1 -> not allowed
-# 0 -> allowed
-allowMove = 0
-# global # of turns variable
-# -> tells number of turns
-#    made during round
-numTurns = 0
-
 def clearState():
-    global turn
-    global board
-    global allowMove
-    global numTurns
-    # reset the turn label
-    boardLabel.config(text="X's turn!", font=("Bookman", 15), bg="#808080", fg="white")
-    # reset the turn variable
-    turn = 1
-    # reset the allow move bool
-    allowMove = 0
-    # reset the number of turns for the round
-    numTurns = 0
+    global game
+    game = gameBoard()
+    boardLabel.config(text="X's turn", bg="#808080", fg="white")
 
-    # reinitialize the board
-    board = [
-        boardSpot([0,0]),boardSpot([0,1]),boardSpot([0,2]),
-        boardSpot([1,0]),boardSpot([1,1]),boardSpot([1,2]),
-        boardSpot([2,0]),boardSpot([2,1]),boardSpot([2,2]),
-    ]
+def checkState(board, test):
+    # board state for winning
+    winner = (
+        (board[0][0].value==test and board[0][1].value==test and board[0][2].value==test) or
+        (board[1][0].value==test and board[1][1].value==test and board[1][2].value==test) or
+        (board[2][0].value==test and board[2][1].value==test and board[2][2].value==test) or
+        (board[0][0].value==test and board[1][0].value==test and board[2][0].value==test) or
+        (board[0][1].value==test and board[1][1].value==test and board[2][1].value==test) or
+        (board[0][2].value==test and board[1][2].value==test and board[2][2].value==test) or
+        (board[0][0].value==test and board[1][1].value==test and board[2][2].value==test) or
+        (board[0][2].value==test and board[1][1].value==test and board[2][0].value==test))
 
-def checkState(board):
-    global allowMove
-    global numTurns
-    # board states for X winning
-    test=1
-    Xwinner = (
-        (board[0].value==test and board[1].value==test and board[2].value==test) or
-        (board[3].value==test and board[4].value==test and board[5].value==test) or
-        (board[6].value==test and board[7].value==test and board[8].value==test) or
-        (board[0].value==test and board[3].value==test and board[6].value==test) or
-        (board[1].value==test and board[4].value==test and board[7].value==test) or
-        (board[2].value==test and board[5].value==test and board[8].value==test) or
-        (board[0].value==test and board[4].value==test and board[8].value==test) or
-        (board[2].value==test and board[4].value==test and board[6].value==test))
-
-    # board states for O winning
-    test=0
-    Owinner = (
-        (board[0].value==test and board[1].value==test and board[2].value==test) or
-        (board[3].value==test and board[4].value==test and board[5].value==test) or
-        (board[6].value==test and board[7].value==test and board[8].value==test) or
-        (board[0].value==test and board[3].value==test and board[6].value==test) or
-        (board[1].value==test and board[4].value==test and board[7].value==test) or
-        (board[2].value==test and board[5].value==test and board[8].value==test) or
-        (board[0].value==test and board[4].value==test and board[8].value==test) or
-        (board[2].value==test and board[4].value==test and board[6].value==test))
-
-    # board state for a tie
-    tie = (numTurns==9 and not (Owinner or Xwinner))
+    tie = (game.numTurns==9 and not winner)
 
     # check states
     if tie:
-        boardLabel.config(text="It's a tie!", bg="white", fg="red")
-        allowMove = 1
-    if Xwinner:
-        boardLabel.config(text="X wins!!", bg="white", fg="green")
-        allowMove = 1
-    if Owinner:
-        boardLabel.config(text="O wins!!", bg="white", fg="green")
-        allowMove = 1
+        game.tie = True
+    if winner and game.turn == 1:
+        game.xWins = True
+    if winner and game.turn == 0:
+        game.oWins = True
     
+class gameBoard:
+    def __init__(self):
+        self.board = [
+            [boardSpot([0,0]),boardSpot([0,1]),boardSpot([0,2])],
+            [boardSpot([1,0]),boardSpot([1,1]),boardSpot([1,2])],
+            [boardSpot([2,0]),boardSpot([2,1]),boardSpot([2,2])]
+        ]
+        self.numTurns  = 0
+        self.turn  = 1
+        self.allowMove = 0
+        self.xWins = False
+        self.oWins = False
+        self.tie   = False
+
+    def makeMove(self, ind):
+        self.numTurns += 1
+        self.board[ind[0]][ind[1]].value = self.turn
+        checkState(self.board, self.turn)
+        if self.turn == 1:
+            self.board[ind[0]][ind[1]].btn.config(image=xImg)
+            boardLabel.config(text="O's turn")
+        if self.turn == 0:
+            self.board[ind[0]][ind[1]].btn.config(image=oImg)
+            boardLabel.config(text="X's turn")
+        self.turn = 1 if self.turn == 0 else 0
+
+        if self.xWins:
+            boardLabel.config(text="X wins!!", bg="white", fg="green")
+            self.allowMove = 1
+        if self.oWins:
+            boardLabel.config(text="O wins!!", bg="white", fg="green")
+            self.allowMove = 1
+        if self.tie:
+            boardLabel.config(text="It's a tie!", bg="white", fg="red")
+            self.allowMove = 1
 
 class boardSpot:
     def __init__(self, ind):
@@ -89,37 +76,12 @@ class boardSpot:
 
     # handles move input
     def clicked(self):
-        global allowMove
-
         # check if the spot already has a value
         # and if moves are allowed
-        if self.value!=-1 or allowMove==1:
+        if self.value!=-1 or game.allowMove==1:
             return None
         else:
-            self.makeMove()
-
-    # exectutes a move
-    def makeMove(self):
-        global turn
-        global numTurns
-
-        # set the value of the board spot
-        self.value = turn
-        # check whose turn it was and set
-        # board state appropriately
-        if turn==1:
-            self.btn.config(image=xImg)
-            turn = 0
-            boardLabel.config(text="O's turn!")
-        else:
-            self.btn.config(image=oImg)
-            turn = 1
-            boardLabel.config(text="X's turn!")
-        
-        # increment number of turns
-        numTurns += 1
-        # check for win state
-        checkState(board)
+            game.makeMove(self.ind)
 
 # set up window
 root = Tk()
@@ -137,11 +99,7 @@ empty= PhotoImage(file="./pngs/empty.png")
 # define board object
 boardFrame = Frame(root)
 boardFrame.pack(side='bottom', pady=(0,30))
-board = [
-    boardSpot([0,0]),boardSpot([0,1]),boardSpot([0,2]),
-    boardSpot([1,0]),boardSpot([1,1]),boardSpot([1,2]),
-    boardSpot([2,0]),boardSpot([2,1]),boardSpot([2,2]),
-]
+game = gameBoard()
 
 # const header labels
 titleLabel = Label(root, text="TicTacToe!", font=("Impact",20))
